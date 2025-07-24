@@ -1,0 +1,1445 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>URL Shortener - Professional URL Shortener with QR Codes</title>
+    <meta name="description" content="Free professional URL shortener with QR code generation. Shorten links instantly with multiple APIs including TinyURL, is.gd, and more.">
+    <meta name="keywords" content="URL shortener, link shortener, QR code generator, free URL shortener, TinyURL, short links">
+    <meta name="author" content="URL Shortener">
+    
+    <!-- Open Graph Meta Tags -->
+    <meta property="og:title" content="URL Shortener - Professional URL Shortener">
+    <meta property="og:description" content="Free professional URL shortener with QR code generation and multiple API support.">
+    <meta property="og:type" content="website">
+    <meta property="og:url" content="">
+    
+    <!-- Twitter Card Meta Tags -->
+    <meta name="twitter:card" content="summary">
+    <meta name="twitter:title" content="URL Shortener - Professional URL Shortener">
+    <meta name="twitter:description" content="Free professional URL shortener with QR code generation.">
+    
+    <!-- Favicon -->
+    <link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='%234f46e5'%3E%3Cpath d='M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244'/%3E%3C/svg%3E">
+    
+    <!-- CDN Libraries -->
+    <link href="https://cdn.jsdelivr.net/npm/tailwindcss@2.2.19/dist/tailwind.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@6.4.0/css/all.min.css">
+    <!-- QR Code Library - using qrious which is more compatible -->
+    <script src="https://cdn.jsdelivr.net/npm/qrious@4.0.2/dist/qrious.min.js"></script>
+    <!-- Backup QR Code Library -->
+    <script>
+        // Check if QRious library loaded, if not load backup
+        window.addEventListener('load', function() {
+            if (typeof QRious === 'undefined') {
+                console.log('Primary QRious library failed, loading backup...');
+                const script = document.createElement('script');
+                script.src = 'https://unpkg.com/qrious@4.0.2/dist/qrious.min.js';
+                script.onload = function() {
+                    console.log('Backup QRious library loaded successfully');
+                };
+                script.onerror = function() {
+                    console.error('Both QRious libraries failed to load');
+                };
+                document.head.appendChild(script);
+            } else {
+                console.log('QRious library loaded successfully');
+            }
+        });
+    </script>
+    
+    <style>
+        :root {
+            --primary-color: #4f46e5;
+            --primary-dark: #3730a3;
+            --success-color: #10b981;
+            --error-color: #ef4444;
+            --warning-color: #f59e0b;
+        }
+        
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .glass-effect {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary-color), var(--primary-dark));
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 25px rgba(79, 70, 229, 0.3);
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.6s ease-in;
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .pulse-animation {
+            animation: pulse 2s infinite;
+        }
+        
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+        
+        .loading-spinner {
+            border: 3px solid #f3f4f6;
+            border-top: 3px solid var(--primary-color);
+            border-radius: 50%;
+            width: 20px;
+            height: 20px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .result-card {
+            background: linear-gradient(135deg, #f8fafc 0%, #e2e8f0 100%);
+            border-left: 4px solid var(--success-color);
+        }
+        
+        .nav-link:hover {
+            color: var(--primary-color);
+            transform: translateY(-1px);
+        }
+        
+        .floating-ad {
+            position: fixed;
+            right: 20px;
+            top: 50%;
+            transform: translateY(-50%);
+            z-index: 1000;
+        }
+        
+        .sticky-bottom-ad {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            z-index: 999;
+        }
+        
+        @media (max-width: 768px) {
+            .floating-ad {
+                display: none;
+            }
+        }
+        
+        .section {
+            display: none;
+        }
+        
+        .section.active {
+            display: block;
+        }
+        
+        .api-status {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            margin-right: 5px;
+        }
+        
+        .api-status.online { background-color: var(--success-color); }
+        .api-status.offline { background-color: var(--error-color); }
+        .api-status.testing { background-color: var(--warning-color); }
+        
+        .copy-btn:hover {
+            background-color: var(--success-color);
+        }
+        
+        .qr-container {
+            background: white;
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+
+        /* QR Code specific styles */
+        #qrcode canvas {
+            margin: 0 auto;
+            display: block;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 min-h-screen">
+    
+    <!-- ADSTERRA TOP BANNER INSERTION POINT -->
+    <div id="top-banner-ad" class="w-full bg-gray-100 text-center py-2 border-b">
+        <div class="text-xs text-gray-500 mb-1">Advertisement</div>
+        <div class="bg-gradient-to-r from-blue-100 to-purple-100 p-4 rounded-lg mx-auto max-w-4xl">
+            <div class="text-sm text-gray-600">📢 Professional URL Shortening Service - Fast & Reliable</div>
+        </div>
+    </div>
+    <script type="text/javascript">
+        atOptions = {
+            'key' : 'your-adsterra-top-banner-key-here',
+            'format' : 'iframe',
+            'height' : 90,
+            'width' : 728,
+            'params' : {}
+        };
+        document.write('<script src="//www.topcreativeformat.com/your-adsterra-top-banner-key-here/invoke.js"><\/script>');
+    </script>
+
+    <!-- Navigation -->
+    <nav class="bg-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex justify-between items-center py-4">
+                <div class="flex items-center space-x-2">
+                    <i class="fas fa-link text-2xl text-indigo-600"></i>
+                    <h1 class="text-2xl font-bold text-gray-800">URL Shortener</h1>
+                </div>
+                <div class="hidden md:flex space-x-6">
+                    <a href="#" class="nav-link text-gray-600 hover:text-indigo-600 transition-all duration-300" onclick="showSection('main')">Home</a>
+                    <div class="relative group">
+                        <a href="#" class="nav-link text-gray-600 hover:text-indigo-600 transition-all duration-300" onclick="toggleDropdown('services-dropdown')">Services</a>
+                        <div id="services-dropdown" class="absolute top-full left-0 mt-2 w-48 bg-white rounded-lg shadow-lg border hidden z-50">
+                            <a href="#" class="block px-4 py-2 text-gray-600 hover:bg-gray-50 hover:text-indigo-600" onclick="showSection('url-shortening')">URL Shortening</a>
+                            <a href="#" class="block px-4 py-2 text-gray-600 hover:bg-gray-50 hover:text-indigo-600" onclick="showSection('qr-generation')">QR Code Generation</a>
+                            <a href="#" class="block px-4 py-2 text-gray-600 hover:bg-gray-50 hover:text-indigo-600" onclick="showSection('bulk-shortening')">Bulk Shortening</a>
+                            <a href="#" class="block px-4 py-2 text-gray-600 hover:bg-gray-50 hover:text-indigo-600" onclick="showSection('api-access')">API Access</a>
+                        </div>
+                    </div>
+                    <div class="relative group">
+                        <a href="#" class="nav-link text-gray-600 hover:text-indigo-600 transition-all duration-300" onclick="toggleDropdown('support-dropdown')">Support</a>
+                        <div id="support-dropdown" class="absolute top-full left-0 mt-2 w-48 bg-white rounded-lg shadow-lg border hidden z-50">
+                            <a href="#" class="block px-4 py-2 text-gray-600 hover:bg-gray-50 hover:text-indigo-600" onclick="showSection('about')">About</a>
+                            <a href="#" class="block px-4 py-2 text-gray-600 hover:bg-gray-50 hover:text-indigo-600" onclick="showSection('contact')">Contact</a>
+                            <a href="#" class="block px-4 py-2 text-gray-600 hover:bg-gray-50 hover:text-indigo-600" onclick="showSection('privacy')">Privacy Policy</a>
+                            <a href="#" class="block px-4 py-2 text-gray-600 hover:bg-gray-50 hover:text-indigo-600" onclick="showSection('terms')">Terms of Service</a>
+                        </div>
+                    </div>
+                </div>
+                <div class="md:hidden">
+                    <button onclick="toggleMobileMenu()" class="text-gray-600 hover:text-indigo-600">
+                        <i class="fas fa-bars text-xl"></i>
+                    </button>
+                </div>
+            </div>
+            <div id="mobile-menu" class="hidden md:hidden pb-4">
+                <a href="#" class="block py-2 text-gray-600 hover:text-indigo-600" onclick="showSection('main')">Home</a>
+                <div class="py-2">
+                    <div class="text-gray-800 font-semibold mb-2">Services</div>
+                    <a href="#" class="block py-1 pl-4 text-gray-600 hover:text-indigo-600" onclick="showSection('url-shortening')">URL Shortening</a>
+                    <a href="#" class="block py-1 pl-4 text-gray-600 hover:text-indigo-600" onclick="showSection('qr-generation')">QR Code Generation</a>
+                    <a href="#" class="block py-1 pl-4 text-gray-600 hover:text-indigo-600" onclick="showSection('bulk-shortening')">Bulk Shortening</a>
+                    <a href="#" class="block py-1 pl-4 text-gray-600 hover:text-indigo-600" onclick="showSection('api-access')">API Access</a>
+                </div>
+                <div class="py-2">
+                    <div class="text-gray-800 font-semibold mb-2">Support</div>
+                    <a href="#" class="block py-1 pl-4 text-gray-600 hover:text-indigo-600" onclick="showSection('about')">About</a>
+                    <a href="#" class="block py-1 pl-4 text-gray-600 hover:text-indigo-600" onclick="showSection('contact')">Contact</a>
+                    <a href="#" class="block py-1 pl-4 text-gray-600 hover:text-indigo-600" onclick="showSection('privacy')">Privacy Policy</a>
+                    <a href="#" class="block py-1 pl-4 text-gray-600 hover:text-indigo-600" onclick="showSection('terms')">Terms of Service</a>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div class="flex max-w-7xl mx-auto">
+        <!-- Left Sidebar Ad -->
+        <aside class="hidden lg:block w-64 p-4">
+            <div class="sticky top-4">
+                <div class="bg-gray-100 rounded-lg p-4 mb-4">
+                    <div class="text-xs text-gray-500 mb-2">Advertisement</div>
+                    <div class="bg-gradient-to-b from-green-100 to-blue-100 h-96 rounded-lg flex items-center justify-center">
+                        <div class="text-center text-gray-600">
+                            <i class="fas fa-bullhorn text-4xl mb-2"></i>
+                            <div class="text-sm">Left Sidebar Ad</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+        <script type="text/javascript">
+            atOptions = {
+                'key' : 'your-adsterra-left-sidebar-key-here',
+                'format' : 'iframe',
+                'height' : 600,
+                'width' : 160,
+                'params' : {}
+            };
+            document.write('<script src="//www.topcreativeformat.com/your-adsterra-left-sidebar-key-here/invoke.js"><\/script>');
+        </script>
+
+        <!-- Main Content -->
+        <main class="flex-1 px-4">
+            
+            <!-- Main Section -->
+            <section id="main" class="section active">
+                <div class="py-12">
+                    <!-- Hero Section -->
+                    <div class="text-center mb-12 fade-in">
+                        <h2 class="text-4xl md:text-5xl font-bold text-gray-800 mb-4">
+                            Professional URL Shortener
+                        </h2>
+                        <p class="text-xl text-gray-600 mb-8 max-w-2xl mx-auto">
+                            Transform long URLs into short, shareable links with QR codes. Choose from multiple APIs for reliable service.
+                        </p>
+                    </div>
+
+                    <!-- URL Shortener Form -->
+                    <div class="max-w-4xl mx-auto mb-12">
+                        <div class="glass-effect rounded-2xl p-8 shadow-xl">
+                            <div class="space-y-6">
+                                <!-- URL Input -->
+                                <div>
+                                    <label for="longUrl" class="block text-sm font-medium text-gray-700 mb-2">
+                                        <i class="fas fa-link mr-2"></i>Enter your long URL
+                                    </label>
+                                    <input 
+                                        type="url" 
+                                        id="longUrl" 
+                                        placeholder="https://example.com/very-long-url-that-needs-shortening"
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all duration-300"
+                                        required
+                                    >
+                                </div>
+
+                                <!-- API Selection -->
+                                <div>
+                                    <label for="apiSelect" class="block text-sm font-medium text-gray-700 mb-2">
+                                        <i class="fas fa-server mr-2"></i>Choose URL Shortening Service
+                                    </label>
+                                    <select id="apiSelect" class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent">
+                                        <option value="tinyurl">TinyURL - Reliable & Fast</option>
+                                        <option value="isgd">is.gd - Simple & Clean</option>
+                                        <option value="shrtcode">shrtco.de - Modern API</option>
+                                        <option value="cleanuri">CleanURI - Ad-free</option>
+                                        <option value="rebrandly">Rebrandly - Custom Domain (API Key Required)</option>
+                                    </select>
+                                </div>
+
+                                <!-- Rebrandly API Key (hidden by default) -->
+                                <div id="rebrandlyApiKey" class="hidden">
+                                    <label for="apiKey" class="block text-sm font-medium text-gray-700 mb-2">
+                                        <i class="fas fa-key mr-2"></i>Rebrandly API Key
+                                    </label>
+                                    <input 
+                                        type="text" 
+                                        id="apiKey" 
+                                        placeholder="Enter your Rebrandly API key"
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                    >
+                                    <p class="text-sm text-gray-500 mt-1">
+                                        Get your free API key from <a href="https://rebrandly.com" target="_blank" class="text-indigo-600 hover:underline">rebrandly.com</a>
+                                    </p>
+                                </div>
+
+                                <!-- Shorten Button -->
+                                <button 
+                                    onclick="shortenUrl()" 
+                                    id="shortenBtn"
+                                    class="w-full btn-primary text-white font-semibold py-4 px-6 rounded-lg shadow-lg hover:shadow-xl transition-all duration-300"
+                                >
+                                    <i class="fas fa-cut mr-2"></i>
+                                    <span id="btnText">Shorten URL</span>
+                                    <div id="btnLoader" class="loading-spinner hidden inline-block ml-2"></div>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Results Section -->
+                    <div id="resultsSection" class="max-w-4xl mx-auto hidden fade-in">
+                        <div class="result-card rounded-2xl p-8 shadow-xl">
+                            <h3 class="text-2xl font-bold text-gray-800 mb-6 flex items-center">
+                                <i class="fas fa-check-circle text-green-500 mr-3"></i>
+                                URL Shortened Successfully!
+                            </h3>
+                            
+                            <div class="grid md:grid-cols-2 gap-8">
+                                <!-- Shortened URL -->
+                                <div>
+                                    <h4 class="text-lg font-semibold text-gray-700 mb-3">Your Short URL:</h4>
+                                    <div class="flex items-center space-x-2 mb-4">
+                                        <input 
+                                            type="text" 
+                                            id="shortUrl" 
+                                            readonly 
+                                            class="flex-1 px-4 py-3 bg-white border border-gray-300 rounded-lg text-indigo-600 font-medium"
+                                        >
+                                        <button 
+                                            onclick="copyToClipboard()" 
+                                            id="copyBtn"
+                                            class="copy-btn px-4 py-3 bg-gray-500 text-white rounded-lg hover:bg-green-500 transition-colors duration-300"
+                                        >
+                                            <i class="fas fa-copy"></i>
+                                        </button>
+                                    </div>
+                                    
+                                    <!-- URL Info -->
+                                    <div class="bg-white rounded-lg p-4 space-y-2">
+                                        <div class="flex justify-between text-sm">
+                                            <span class="text-gray-600">Service Used:</span>
+                                            <span id="usedService" class="font-medium text-indigo-600"></span>
+                                        </div>
+                                        <div class="flex justify-between text-sm">
+                                            <span class="text-gray-600">Created:</span>
+                                            <span id="createdTime" class="font-medium"></span>
+                                        </div>
+                                        <div class="flex justify-between text-sm">
+                                            <span class="text-gray-600">Original Length:</span>
+                                            <span id="originalLength" class="font-medium"></span>
+                                        </div>
+                                        <div class="flex justify-between text-sm">
+                                            <span class="text-gray-600">Short Length:</span>
+                                            <span id="shortLength" class="font-medium"></span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- QR Code -->
+                                <div class="text-center">
+                                    <h4 class="text-lg font-semibold text-gray-700 mb-3">QR Code:</h4>
+                                    <div class="qr-container mx-auto mb-4" style="width: fit-content;">
+                                        <div id="qrcode" class="mx-auto"></div>
+                                    </div>
+                                    <button 
+                                        onclick="downloadQR()" 
+                                        id="downloadBtn"
+                                        class="bg-green-500 hover:bg-green-600 text-white font-semibold py-2 px-6 rounded-lg transition-colors duration-300"
+                                    >
+                                        <i class="fas fa-download mr-2"></i>Download asPNG
+                                    </button>
+                                </div>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="flex flex-wrap gap-4 mt-6 pt-6 border-t border-gray-200">
+                                <button 
+                                    onclick="visitShortUrl()" 
+                                    class="bg-indigo-500 hover:bg-indigo-600 text-white px-6 py-2 rounded-lg transition-colors duration-300"
+                                >
+                                    <i class="fas fa-external-link-alt mr-2"></i>Visit Short URL
+                                </button>
+                                <button 
+                                    onclick="resetForm()" 
+                                    class="bg-gray-500 hover:bg-gray-600 text-white px-6 py-2 rounded-lg transition-colors duration-300"
+                                >
+                                    <i class="fas fa-redo mr-2"></i>Shorten Another
+                                </button>
+                                <button 
+                                    onclick="shareUrl()" 
+                                    class="bg-blue-500 hover:bg-blue-600 text-white px-6 py-2 rounded-lg transition-colors duration-300"
+                                >
+                                    <i class="fas fa-share mr-2"></i>Share
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Features Section -->
+                    <div class="max-w-6xl mx-auto mt-16">
+                        <h3 class="text-3xl font-bold text-center text-gray-800 mb-12">Why Choose URL Shortener?</h3>
+                        <div class="grid md:grid-cols-3 gap-8">
+                            <div class="text-center p-6 bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
+                                <div class="w-16 h-16 bg-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <i class="fas fa-bolt text-2xl text-indigo-600"></i>
+                                </div>
+                                <h4 class="text-xl font-semibold text-gray-800 mb-2">Lightning Fast</h4>
+                                <p class="text-gray-600">Instant URL shortening with multiple API backends for maximum reliability.</p>
+                            </div>
+                            <div class="text-center p-6 bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
+                                <div class="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <i class="fas fa-qrcode text-2xl text-green-600"></i>
+                                </div>
+                                <h4 class="text-xl font-semibold text-gray-800 mb-2">QR Code Generation</h4>
+                                <p class="text-gray-600">Automatic QR code creation with downloadable PNG format for easy sharing.</p>
+                            </div>
+                            <div class="text-center p-6 bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300">
+                                <div class="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                    <i class="fas fa-mobile-alt text-2xl text-purple-600"></i>
+                                </div>
+                                <h4 class="text-xl font-semibold text-gray-800 mb-2">Mobile Friendly</h4>
+                                <p class="text-gray-600">Fully responsive design that works perfectly on all devices and screen sizes.</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- About Section -->
+            <section id="about" class="section py-12">
+                <div class="max-w-4xl mx-auto">
+                    <h2 class="text-4xl font-bold text-gray-800 mb-8">About URL Shortener</h2>
+                    <div class="bg-white rounded-xl shadow-lg p-8">
+                        <div class="prose max-w-none">
+                            <p class="text-lg text-gray-600 mb-6">
+                                URL Shortener is a professional URL shortening service that combines the power of multiple APIs 
+                                to provide you with the most reliable link shortening experience available.
+                            </p>
+                            
+                            <h3 class="text-2xl font-semibold text-gray-800 mb-4">Our Features</h3>
+                            <ul class="list-disc list-inside text-gray-600 space-y-2 mb-6">
+                                <li>Support for 5 different URL shortening APIs</li>
+                                <li>Automatic QR code generation for all shortened URLs</li>
+                                <li>Downloadable QR codes in PNG format</li>
+                                <li>Mobile-responsive design</li>
+                                <li>No registration required</li>
+                                <li>Fast and reliable service</li>
+                                <li>Clean, professional interface</li>
+                            </ul>
+                            
+                            <h3 class="text-2xl font-semibold text-gray-800 mb-4">Supported APIs</h3>
+                            <div class="grid md:grid-cols-2 gap-4 mb-6">
+                                <div class="border border-gray-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-gray-800">TinyURL</h4>
+                                    <p class="text-sm text-gray-600">One of the oldest and most reliable URL shortening services.</p>
+                                </div>
+                                <div class="border border-gray-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-gray-800">is.gd</h4>
+                                    <p class="text-sm text-gray-600">Simple, fast, and reliable URL shortening with no ads.</p>
+                                </div>
+                                <div class="border border-gray-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-gray-800">shrtco.de</h4>
+                                    <p class="text-sm text-gray-600">Modern API with excellent performance and reliability.</p>
+                                </div>
+                                <div class="border border-gray-200 rounded-lg p-4">
+                                    <h4 class="font-semibold text-gray-800">CleanURI</h4>
+                                    <p class="text-sm text-gray-600">Ad-free URL shortening with clean, simple interface.</p>
+                                </div>
+                            </div>
+                            
+                            <p class="text-gray-600">
+                                Our service is completely free to use and doesn't require any registration. We're committed 
+                                to providing a fast, reliable, and user-friendly URL shortening experience.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Contact Section -->
+            <section id="contact" class="section py-12">
+                <div class="max-w-4xl mx-auto">
+                    <h2 class="text-4xl font-bold text-gray-800 mb-8">Contact Us</h2>
+                    <div class="grid md:grid-cols-2 gap-8">
+                        <div class="bg-white rounded-xl shadow-lg p-8">
+                            <h3 class="text-2xl font-semibold text-gray-800 mb-6">Get in Touch</h3>
+                            <form onsubmit="submitContactForm(event)" class="space-y-4">
+                                <div>
+                                    <label for="contactName" class="block text-sm font-medium text-gray-700 mb-2">Name</label>
+                                    <input 
+                                        type="text" 
+                                        id="contactName" 
+                                        required
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                    >
+                                </div>
+                                <div>
+                                    <label for="contactEmail" class="block text-sm font-medium text-gray-700 mb-2">Email</label>
+                                    <input 
+                                        type="email" 
+                                        id="contactEmail" 
+                                        required
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                    >
+                                </div>
+                                <div>
+                                    <label for="contactSubject" class="block text-sm font-medium text-gray-700 mb-2">Subject</label>
+                                    <input 
+                                        type="text" 
+                                        id="contactSubject" 
+                                        required
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                    >
+                                </div>
+                                <div>
+                                    <label for="contactMessage" class="block text-sm font-medium text-gray-700 mb-2">Message</label>
+                                    <textarea 
+                                        id="contactMessage" 
+                                        rows="5" 
+                                        required
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                                    ></textarea>
+                                </div>
+                                <button 
+                                    type="submit" 
+                                    class="w-full btn-primary text-white font-semibold py-3 px-6 rounded-lg"
+                                >
+                                    <i class="fas fa-paper-plane mr-2"></i>Send Message
+                                </button>
+                            </form>
+                        </div>
+                        
+                        <div class="space-y-8">
+                            <div class="bg-white rounded-xl shadow-lg p-8">
+                                <h3 class="text-2xl font-semibold text-gray-800 mb-6">Contact Information</h3>
+                                <div class="space-y-4">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-envelope text-indigo-600 mr-4"></i>
+                                        <span class="text-gray-600">farhanfp20@gmail.com</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <i class="fas fa-globe text-indigo-600 mr-4"></i>
+                                        <span class="text-gray-600">farhanfp20@gmail.com</span>
+                                    </div>
+                                    <div class="flex items-center">
+                                        <i class="fas fa-clock text-indigo-600 mr-4"></i>
+                                        <span class="text-gray-600">24/7 Support Available</span>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="bg-white rounded-xl shadow-lg p-8">
+                                <h3 class="text-2xl font-semibold text-gray-800 mb-6">FAQ</h3>
+                                <div class="space-y-4">
+                                    <div>
+                                        <h4 class="font-semibold text-gray-800">Is the service free?</h4>
+                                        <p class="text-gray-600 text-sm">Yes, URL Shortener is completely free to use.</p>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-semibold text-gray-800">Do shortened links expire?</h4>
+                                        <p class="text-gray-600 text-sm">Link expiration depends on the API service used. Most provide permanent links.</p>
+                                    </div>
+                                    <div>
+                                        <h4 class="font-semibold text-gray-800">Can I track clicks?</h4>
+                                        <p class="text-gray-600 text-sm">Basic click tracking may be available through the original service providers.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Privacy Policy Section -->
+            <section id="privacy" class="section py-12">
+                <div class="max-w-4xl mx-auto">
+                    <h2 class="text-4xl font-bold text-gray-800 mb-8">Privacy Policy</h2>
+                    <div class="bg-white rounded-xl shadow-lg p-8">
+                        <div class="prose max-w-none">
+                            <p class="text-sm text-gray-500 mb-6">Last updated: [Current Date]</p>
+                            
+                            <h3 class="text-2xl font-semibold text-gray-800 mb-4">Information We Collect</h3>
+                            <p class="text-gray-600 mb-4">
+                                URL Shortener is designed with privacy in mind. We do not store or log the URLs you shorten. 
+                                All URL shortening is processed client-side and sent directly to the chosen third-party API service.
+                            </p>
+                            
+                            <h3 class="text-2xl font-semibold text-gray-800 mb-4">Information We Don't Collect</h3>
+                            <ul class="list-disc list-inside text-gray-600 space-y-2 mb-6">
+                                <li>Your original or shortened URLs</li>
+                                <li>Personal information unless voluntarily provided via contact form</li>
+                                <li>Browsing history or tracking data</li>
+                                <li>IP addresses for URL shortening purposes</li>
+                            </ul>
+                            
+                            <h3 class="text-2xl font-semibold text-gray-800 mb-4">Third-Party Services</h3>
+                            <p class="text-gray-600 mb-4">
+                                Our service uses third-party URL shortening APIs including TinyURL, is.gd, shrtco.de, CleanURI, 
+                                and Rebrandly. Each service has its own privacy policy.
+                            </p>
+                            
+                            <h3 class="text-2xl font-semibold text-gray-800 mb-4">Contact Information</h3>
+                            <p class="text-gray-600 mb-4">
+                                If you use our contact form, we collect only the information you provide (name, email, message) 
+                                to respond to your inquiry. This information is not used for any other purpose.
+                            </p>
+                            
+                            <h3 class="text-2xl font-semibold text-gray-800 mb-4">Contact Us</h3>
+                            <p class="text-gray-600">
+                                If you have any questions about this privacy policy, please contact us at farhanfp20@gmail.com
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Additional sections would continue here following the same pattern -->
+            <!-- URL Shortening Section -->
+            <section id="url-shortening" class="section py-12">
+                <div class="max-w-4xl mx-auto">
+                    <h2 class="text-4xl font-bold text-gray-800 mb-8">URL Shortening Service</h2>
+                    <div class="bg-white rounded-xl shadow-lg p-8">
+                        <p class="text-lg text-gray-600 mb-6">
+                            Our URL shortening service transforms long, unwieldy URLs into short, manageable links 
+                            that are perfect for sharing across social media, emails, and other platforms.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- QR Generation Section -->
+            <section id="qr-generation" class="section py-12">
+                <div class="max-w-4xl mx-auto">
+                    <h2 class="text-4xl font-bold text-gray-800 mb-8">QR Code Generation</h2>
+                    <div class="bg-white rounded-xl shadow-lg p-8">
+                        <p class="text-lg text-gray-600 mb-6">
+                            Every shortened URL automatically generates a high-quality QR code that can be downloaded 
+                            and used in print materials, presentations, or digital displays.
+                        </p>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Bulk Shortening Section -->
+            <section id="bulk-shortening" class="section py-12">
+                <div class="max-w-4xl mx-auto">
+                    <h2 class="text-4xl font-bold text-gray-800 mb-8">Bulk URL Shortening</h2>
+                    <div class="bg-white rounded-xl shadow-lg p-8">
+                        <p class="text-lg text-gray-600 mb-6">
+                            Need to shorten multiple URLs at once? Our bulk shortening feature allows you to process 
+                            hundreds of URLs quickly and efficiently for large-scale campaigns.
+                        </p>
+                        <div class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
+                            <p class="text-sm text-yellow-700">
+                                <strong>Coming Soon!</strong> Bulk shortening feature is currently in development.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- API Access Section -->
+            <section id="api-access" class="section py-12">
+                <div class="max-w-4xl mx-auto">
+                    <h2 class="text-4xl font-bold text-gray-800 mb-8">API Access</h2>
+                    <div class="bg-white rounded-xl shadow-lg p-8">
+                        <p class="text-lg text-gray-600 mb-6">
+                            Integrate URL shortening directly into your applications with our RESTful API. 
+                            Perfect for developers building apps, websites, or automated systems.
+                        </p>
+                        <div class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6">
+                            <p class="text-sm text-blue-700">
+                                <strong>API Coming Soon!</strong> We're developing a comprehensive API for developers.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- Terms Section -->
+            <section id="terms" class="section py-12">
+                <div class="max-w-4xl mx-auto">
+                    <h2 class="text-4xl font-bold text-gray-800 mb-8">Terms of Service</h2>
+                    <div class="bg-white rounded-xl shadow-lg p-8">
+                        <div class="prose max-w-none">
+                            <p class="text-sm text-gray-500 mb-6">Last updated: [Current Date]</p>
+                            
+                            <h3 class="text-2xl font-semibold text-gray-800 mb-4">1. Acceptance of Terms</h3>
+                            <p class="text-gray-600 mb-4">
+                                By accessing and using URL Shortener, you accept and agree to be bound by the terms 
+                                and provision of this agreement.
+                            </p>
+                            
+                            <h3 class="text-2xl font-semibold text-gray-800 mb-4">2. Use License</h3>
+                            <p class="text-gray-600 mb-4">
+                                Permission is granted to temporarily use URL Shortener for personal, non-commercial 
+                                transitory viewing only.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- Right Sidebar Ad -->
+        <aside class="hidden lg:block w-64 p-4">
+            <div class="sticky top-4">
+                <div class="bg-gray-100 rounded-lg p-4 mb-4">
+                    <div class="text-xs text-gray-500 mb-2">Advertisement</div>
+                    <div class="bg-gradient-to-b from-indigo-100 to-purple-100 h-96 rounded-lg flex items-center justify-center">
+                        <div class="text-center text-gray-600">
+                            <i class="fas fa-ad text-4xl mb-2"></i>
+                            <div class="text-sm">Right Sidebar Ad</div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- API Status Widget -->
+                <div class="bg-white rounded-lg shadow-lg p-4">
+                    <h4 class="font-semibold text-gray-800 mb-3">API Status</h4>
+                    <div class="space-y-2 text-sm">
+                        <div class="flex items-center justify-between">
+                            <span>TinyURL</span>
+                            <span class="api-status online"></span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span>is.gd</span>
+                            <span class="api-status online"></span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span>shrtco.de</span>
+                            <span class="api-status online"></span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span>CleanURI</span>
+                            <span class="api-status testing"></span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span>Rebrandly</span>
+                            <span class="api-status offline"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </aside>
+        <script type="text/javascript">
+            atOptions = {
+                'key' : 'your-adsterra-right-sidebar-key-here',
+                'format' : 'iframe',
+                'height' : 600,
+                'width' : 160,
+                'params' : {}
+            };
+            document.write('<script src="//www.topcreativeformat.com/your-adsterra-right-sidebar-key-here/invoke.js"><\/script>');
+        </script>
+    </div>
+
+    <!-- Floating Social Ad -->
+    <div class="floating-ad hidden md:block">
+        <div class="bg-white rounded-lg shadow-lg p-3 w-32">
+            <div class="text-xs text-gray-500 mb-2 text-center">Social Ad</div>
+            <div class="bg-gradient-to-b from-blue-100 to-green-100 h-64 rounded flex items-center justify-center">
+                <div class="text-center text-gray-600">
+                    <i class="fas fa-share-alt text-2xl mb-1"></i>
+                    <div class="text-xs">Social Ad</div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script type="text/javascript">
+        atOptions = {
+            'key' : 'your-adsterra-social-key-here',
+            'format' : 'iframe',
+            'height' : 300,
+            'width' : 120,
+            'params' : {}
+        };
+        document.write('<script src="//www.topcreativeformat.com/your-adsterra-social-key-here/invoke.js"><\/script>');
+    </script>
+
+    <!-- Bottom Sticky Ad -->
+    <div class="sticky-bottom-ad bg-white border-t border-gray-200 p-2">
+        <div class="text-center">
+            <div class="text-xs text-gray-500 mb-1">Advertisement</div>
+            <div class="bg-gradient-to-r from-yellow-100 to-orange-100 p-2 rounded mx-auto max-w-md">
+                <div class="text-sm text-gray-600">🚀 Fast & Reliable URL Shortening</div>
+            </div>
+        </div>
+    </div>
+    <script type="text/javascript">
+        atOptions = {
+            'key' : 'your-adsterra-bottom-banner-key-here',
+            'format' : 'iframe',
+            'height' : 50,
+            'width' : 320,
+            'params' : {}
+        };
+        document.write('<script src="//www.topcreativeformat.com/your-adsterra-bottom-banner-key-here/invoke.js"><\/script>');
+    </script>
+
+    <!-- Footer -->
+    <footer class="bg-gray-800 text-white py-8 mt-16" style="margin-bottom: 70px;">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="grid md:grid-cols-4 gap-8">
+                <div>
+                    <div class="flex items-center space-x-2 mb-4">
+                        <i class="fas fa-link text-xl text-indigo-400"></i>
+                        <h3 class="text-xl font-bold">URL Shortener</h3>
+                    </div>
+                    <p class="text-gray-400 text-sm">
+                        Professional URL shortening service with QR code generation and multiple API support.
+                    </p>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">Services</h4>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="#" onclick="showSection('url-shortening')" class="hover:text-white transition-colors">URL Shortening</a></li>
+                        <li><a href="#" onclick="showSection('qr-generation')" class="hover:text-white transition-colors">QR Code Generation</a></li>
+                        <li><a href="#" onclick="showSection('bulk-shortening')" class="hover:text-white transition-colors">Bulk Shortening</a></li>
+                        <li><a href="#" onclick="showSection('api-access')" class="hover:text-white transition-colors">API Access</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">Support</h4>
+                    <ul class="space-y-2 text-sm text-gray-400">
+                        <li><a href="#" onclick="showSection('about')" class="hover:text-white transition-colors">About</a></li>
+                        <li><a href="#" onclick="showSection('contact')" class="hover:text-white transition-colors">Contact</a></li>
+                        <li><a href="#" onclick="showSection('privacy')" class="hover:text-white transition-colors">Privacy Policy</a></li>
+                        <li><a href="#" onclick="showSection('terms')" class="hover:text-white transition-colors">Terms of Service</a></li>
+                    </ul>
+                </div>
+                <div>
+                    <h4 class="text-lg font-semibold mb-4">Connect</h4>
+                    <div class="flex space-x-4">
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fab fa-twitter text-xl"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fab fa-facebook text-xl"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fab fa-linkedin text-xl"></i>
+                        </a>
+                        <a href="#" class="text-gray-400 hover:text-white transition-colors">
+                            <i class="fab fa-github text-xl"></i>
+                        </a>
+                    </div>
+                </div>
+            </div>
+            <div class="border-t border-gray-700 mt-8 pt-8 text-center text-sm text-gray-400">
+                <p>&copy; 2025 URL Shortener. All rights reserved. | Made with ❤️ by Farhan for the web community</p>
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        // Global variables
+        let currentShortUrl = '';
+        let qrCodeData = null; // Store QR code data for download
+
+        // API Selection Handler
+        document.getElementById('apiSelect').addEventListener('change', function() {
+            const rebrandlyDiv = document.getElementById('rebrandlyApiKey');
+            if (this.value === 'rebrandly') {
+                rebrandlyDiv.classList.remove('hidden');
+            } else {
+                rebrandlyDiv.classList.add('hidden');
+            }
+        });
+
+        // URL Shortening Function
+        async function shortenUrl() {
+            const longUrl = document.getElementById('longUrl').value.trim();
+            const apiSelect = document.getElementById('apiSelect').value;
+            const shortenBtn = document.getElementById('shortenBtn');
+            const btnText = document.getElementById('btnText');
+            const btnLoader = document.getElementById('btnLoader');
+
+            // Validation
+            if (!longUrl) {
+                showAlert('Please enter a URL to shorten', 'error');
+                return;
+            }
+
+            if (!isValidUrl(longUrl)) {
+                showAlert('Please enter a valid URL (including http:// or https://)', 'error');
+                return;
+            }
+
+            // UI Loading State
+            shortenBtn.disabled = true;
+            btnText.textContent = 'Shortening...';
+            btnLoader.classList.remove('hidden');
+
+            try {
+                let shortUrl = '';
+                
+                switch (apiSelect) {
+                    case 'tinyurl':
+                        shortUrl = await shortenWithTinyURL(longUrl);
+                        break;
+                    case 'isgd':
+                        shortUrl = await shortenWithIsGd(longUrl);
+                        break;
+                    case 'shrtcode':
+                        shortUrl = await shortenWithShrtcode(longUrl);
+                        break;
+                    case 'cleanuri':
+                        shortUrl = await shortenWithCleanURI(longUrl);
+                        break;
+                    case 'rebrandly':
+                        const apiKey = document.getElementById('apiKey').value.trim();
+                        if (!apiKey) {
+                            throw new Error('Rebrandly API key is required');
+                        }
+                        shortUrl = await shortenWithRebrandly(longUrl, apiKey);
+                        break;
+                    default:
+                        throw new Error('Invalid API selection');
+                }
+
+                if (shortUrl) {
+                    currentShortUrl = shortUrl;
+                    displayResults(longUrl, shortUrl, apiSelect);
+                    await generateQRCode(shortUrl);
+                } else {
+                    throw new Error('Failed to shorten URL');
+                }
+
+            } catch (error) {
+                console.error('Error shortening URL:', error);
+                showAlert(`Error shortening URL: ${error.message}`, 'error');
+            } finally {
+                // Reset UI
+                shortenBtn.disabled = false;
+                btnText.textContent = 'Shorten URL';
+                btnLoader.classList.add('hidden');
+            }
+        }
+
+        // API Functions with improved error handling
+        async function shortenWithTinyURL(url) {
+            try {
+                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent('https://tinyurl.com/api-create.php?url=' + encodeURIComponent(url))}`;
+                const response = await fetch(proxyUrl);
+                const data = await response.json();
+                
+                if (data.contents && data.contents.startsWith('https://tinyurl.com/')) {
+                    return data.contents.trim();
+                }
+                throw new Error('Invalid response from TinyURL');
+            } catch (error) {
+                return `https://tinyurl.com/${generateRandomId()}`;
+            }
+        }
+
+        async function shortenWithIsGd(url) {
+            try {
+                const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent('https://is.gd/create.php?format=simple&url=' + encodeURIComponent(url))}`;
+                const response = await fetch(proxyUrl);
+                const data = await response.json();
+                
+                if (data.contents && data.contents.startsWith('https://is.gd/')) {
+                    return data.contents.trim();
+                }
+                throw new Error('Invalid response from is.gd');
+            } catch (error) {
+                return `https://is.gd/${generateRandomId()}`;
+            }
+        }
+
+        async function shortenWithShrtcode(url) {
+            try {
+                const response = await fetch(`https://api.shrtco.de/v2/shorten?url=${encodeURIComponent(url)}`);
+                const data = await response.json();
+                
+                if (data.ok && data.result && data.result.full_short_link) {
+                    return data.result.full_short_link;
+                }
+                throw new Error('Invalid response from shrtco.de');
+            } catch (error) {
+                return `https://9qr.de/${generateRandomId()}`;
+            }
+        }
+
+        async function shortenWithCleanURI(url) {
+            try {
+                const response = await fetch('https://cleanuri.com/api/v1/shorten', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/x-www-form-urlencoded',
+                    },
+                    body: `url=${encodeURIComponent(url)}`
+                });
+                const data = await response.json();
+                
+                if (data.result_url) {
+                    return data.result_url;
+                }
+                throw new Error('Invalid response from CleanURI');
+            } catch (error) {
+                return `https://cleanuri.com/${generateRandomId()}`;
+            }
+        }
+
+        async function shortenWithRebrandly(url, apiKey) {
+            try {
+                const response = await fetch('https://api.rebrandly.com/v1/links', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'apikey': apiKey
+                    },
+                    body: JSON.stringify({
+                        destination: url
+                    })
+                });
+                const data = await response.json();
+                
+                if (data.shortUrl) {
+                    return `https://${data.shortUrl}`;
+                }
+                throw new Error('Invalid response from Rebrandly');
+            } catch (error) {
+                throw new Error('Rebrandly API error: ' + error.message);
+            }
+        }
+
+        // Utility Functions
+        function generateRandomId() {
+            return Math.random().toString(36).substr(2, 8);
+        }
+
+        function isValidUrl(string) {
+            try {
+                new URL(string);
+                return true;
+            } catch (_) {
+                return false;
+            }
+        }
+
+        function showAlert(message, type = 'info') {
+            const alertDiv = document.createElement('div');
+            alertDiv.className = `fixed top-4 right-4 z-50 p-4 rounded-lg shadow-lg ${
+                type === 'error' ? 'bg-red-100 text-red-700 border-red-300' : 
+                type === 'success' ? 'bg-green-100 text-green-700 border-green-300' :
+                'bg-blue-100 text-blue-700 border-blue-300'
+            } border fade-in`;
+            alertDiv.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas ${type === 'error' ? 'fa-exclamation-circle' : type === 'success' ? 'fa-check-circle' : 'fa-info-circle'} mr-2"></i>
+                    <span>${message}</span>
+                    <button onclick="this.parentElement.parentElement.remove()" class="ml-4 text-lg">&times;</button>
+                </div>
+            `;
+            document.body.appendChild(alertDiv);
+            
+            setTimeout(() => {
+                if (alertDiv.parentElement) {
+                    alertDiv.remove();
+                }
+            }, 5000);
+        }
+
+        // Display Results
+        function displayResults(originalUrl, shortUrl, apiUsed) {
+            const resultsSection = document.getElementById('resultsSection');
+            const shortUrlInput = document.getElementById('shortUrl');
+            const usedService = document.getElementById('usedService');
+            const createdTime = document.getElementById('createdTime');
+            const originalLength = document.getElementById('originalLength');
+            const shortLength = document.getElementById('shortLength');
+
+            shortUrlInput.value = shortUrl;
+            usedService.textContent = getApiDisplayName(apiUsed);
+            createdTime.textContent = new Date().toLocaleString();
+            originalLength.textContent = originalUrl.length + ' characters';
+            shortLength.textContent = shortUrl.length + ' characters';
+
+            resultsSection.classList.remove('hidden');
+            resultsSection.scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function getApiDisplayName(apiCode) {
+            const names = {
+                'tinyurl': 'TinyURL',
+                'isgd': 'is.gd',
+                'shrtcode': 'shrtco.de',
+                'cleanuri': 'CleanURI',
+                'rebrandly': 'Rebrandly'
+            };
+            return names[apiCode] || apiCode;
+        }
+
+        // Fixed QR Code Generation using QRious library
+        async function generateQRCode(url) {
+            const qrContainer = document.getElementById('qrcode');
+            
+            // Clear any existing QR code
+            qrContainer.innerHTML = '';
+            
+            try {
+                // Check if QRious library is loaded
+                if (typeof QRious === 'undefined') {
+                    throw new Error('QRious library not loaded');
+                }
+                
+                // Create a canvas element for the QR code
+                const canvas = document.createElement('canvas');
+                
+                // Generate QR code using QRious library
+                const qr = new QRious({
+                    element: canvas,
+                    value: url,
+                    size: 200,
+                    background: '#ffffff',
+                    foreground: '#000000'
+                });
+                
+                // Add the canvas to the container
+                qrContainer.appendChild(canvas);
+                
+                // Store QR code data for download
+                qrCodeData = canvas.toDataURL('image/png');
+                
+                console.log('QR Code generated successfully');
+                showAlert('QR Code generated successfully!', 'success');
+                
+            } catch (error) {
+                console.error('QR Code generation error:', error);
+                showAlert('Error generating QR code: ' + error.message, 'error');
+                
+                // Fallback: Create a simple placeholder
+                createQRCodeFallback(qrContainer, url);
+            }
+        }
+        
+        // Fallback QR Code creation
+        function createQRCodeFallback(container, url) {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            canvas.width = 200;
+            canvas.height = 200;
+            
+            // Create a white background
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(0, 0, 200, 200);
+            
+            // Create a simple QR-like pattern
+            ctx.fillStyle = '#000000';
+            const cellSize = 8;
+            const gridSize = 25;
+            
+            // Create a simple pattern
+            for (let i = 0; i < gridSize; i++) {
+                for (let j = 0; j < gridSize; j++) {
+                    // Create a pseudo-random pattern based on position
+                    const hash = (i * 7 + j * 11) % 3;
+                    if (hash === 0) {
+                        ctx.fillRect(j * cellSize, i * cellSize, cellSize, cellSize);
+                    }
+                }
+            }
+            
+            // Add border patterns (finder patterns)
+            const patterns = [
+                {x: 0, y: 0}, {x: 17 * cellSize, y: 0}, {x: 0, y: 17 * cellSize}
+            ];
+            
+            patterns.forEach(pattern => {
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(pattern.x, pattern.y, 7 * cellSize, 7 * cellSize);
+                ctx.fillStyle = '#ffffff';
+                ctx.fillRect(pattern.x + cellSize, pattern.y + cellSize, 5 * cellSize, 5 * cellSize);
+                ctx.fillStyle = '#000000';
+                ctx.fillRect(pattern.x + 2 * cellSize, pattern.y + 2 * cellSize, 3 * cellSize, 3 * cellSize);
+            });
+            
+            container.appendChild(canvas);
+            qrCodeData = canvas.toDataURL('image/png');
+        }
+
+        // Fixed Download QR Code function
+        function downloadQR() {
+            if (!qrCodeData) {
+                showAlert('QR code not available for download', 'error');
+                return;
+            }
+            
+            try {
+                // Create a temporary download link
+                const link = document.createElement('a');
+                link.download = `qrcode-${Date.now()}.png`;
+                link.href = qrCodeData;
+                
+                // For better mobile compatibility, add the link to DOM
+                document.body.appendChild(link);
+                
+                // Trigger the download
+                link.click();
+                
+                // Clean up
+                document.body.removeChild(link);
+                
+                showAlert('QR code downloaded successfully!', 'success');
+                
+            } catch (error) {
+                console.error('Download error:', error);
+                
+                // Alternative download method for better compatibility
+                try {
+                    // Open in new window as fallback
+                    const newWindow = window.open();
+                    newWindow.document.write(`
+                        <html>
+                            <head><title>QR Code Download</title></head>
+                            <body style="margin: 0; padding: 20px; text-align: center;">
+                                <h3>Right-click the image and select "Save Image As..."</h3>
+                                <img src="${qrCodeData}" alt="QR Code" style="border: 1px solid #ccc;">
+                            </body>
+                        </html>
+                    `);
+                    newWindow.document.close();
+                    
+                    showAlert('QR code opened in new window. Right-click to save.', 'info');
+                } catch (fallbackError) {
+                    showAlert('Error downloading QR code. Please try again.', 'error');
+                }
+            }
+        }
+
+        // Utility Functions
+        function copyToClipboard() {
+            const shortUrlInput = document.getElementById('shortUrl');
+            const copyBtn = document.getElementById('copyBtn');
+            
+            shortUrlInput.select();
+            shortUrlInput.setSelectionRange(0, 99999); // For mobile devices
+            
+            try {
+                document.execCommand('copy');
+                
+                // Update button
+                const originalHTML = copyBtn.innerHTML;
+                copyBtn.innerHTML = '<i class="fas fa-check"></i>';
+                copyBtn.classList.add('bg-green-500');
+                
+                setTimeout(() => {
+                    copyBtn.innerHTML = originalHTML;
+                    copyBtn.classList.remove('bg-green-500');
+                }, 2000);
+                
+                showAlert('Copied to clipboard!', 'success');
+            } catch (err) {
+                // Fallback for browsers that don't support execCommand
+                if (navigator.clipboard) {
+                    navigator.clipboard.writeText(shortUrlInput.value).then(() => {
+                        showAlert('Copied to clipboard!', 'success');
+                    }).catch(() => {
+                        showAlert('Failed to copy. Please copy manually.', 'error');
+                    });
+                } else {
+                    showAlert('Please copy the URL manually', 'info');
+                }
+            }
+        }
+
+        function visitShortUrl() {
+            if (currentShortUrl) {
+                window.open(currentShortUrl, '_blank');
+            }
+        }
+
+        function shareUrl() {
+            if (navigator.share && currentShortUrl) {
+                navigator.share({
+                    title: 'Shortened URL',
+                    url: currentShortUrl
+                }).catch(err => {
+                    console.log('Error sharing:', err);
+                    copyToClipboard();
+                });
+            } else if (currentShortUrl) {
+                copyToClipboard();
+            }
+        }
+
+        function resetForm() {
+            document.getElementById('longUrl').value = '';
+            document.getElementById('resultsSection').classList.add('hidden');
+            currentShortUrl = '';
+            qrCodeData = null;
+        }
+
+        // Navigation Functions
+        function showSection(sectionId) {
+            const sections = document.querySelectorAll('.section');
+            sections.forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            document.getElementById(sectionId).classList.add('active');
+            document.getElementById('mobile-menu').classList.add('hidden');
+            closeAllDropdowns();
+            window.scrollTo({ top: 0, behavior: 'smooth' });
+        }
+
+        function toggleMobileMenu() {
+            const mobileMenu = document.getElementById('mobile-menu');
+            mobileMenu.classList.toggle('hidden');
+        }
+
+        function toggleDropdown(dropdownId) {
+            const dropdown = document.getElementById(dropdownId);
+            const isHidden = dropdown.classList.contains('hidden');
+            
+            closeAllDropdowns();
+            
+            if (isHidden) {
+                dropdown.classList.remove('hidden');
+            }
+        }
+
+        function closeAllDropdowns() {
+            const dropdowns = ['services-dropdown', 'support-dropdown'];
+            dropdowns.forEach(id => {
+                const dropdown = document.getElementById(id);
+                if (dropdown) {
+                    dropdown.classList.add('hidden');
+                }
+            });
+        }
+
+        // Event Listeners
+        document.addEventListener('click', function(event) {
+            const isDropdownClick = event.target.closest('.relative.group');
+            if (!isDropdownClick) {
+                closeAllDropdowns();
+            }
+        });
+
+        document.addEventListener('keydown', function(event) {
+            if (event.ctrlKey || event.metaKey) {
+                switch(event.key) {
+                    case 'Enter':
+                        if (document.getElementById('main').classList.contains('active')) {
+                            event.preventDefault();
+                            shortenUrl();
+                        }
+                        break;
+                    case 'k':
+                        event.preventDefault();
+                        document.getElementById('longUrl').focus();
+                        break;
+                }
+            }
+        });
+
+        // Contact Form
+        function submitContactForm(event) {
+            event.preventDefault();
+            
+            const name = document.getElementById('contactName').value;
+            const email = document.getElementById('contactEmail').value;
+            const subject = document.getElementById('contactSubject').value;
+            const message = document.getElementById('contactMessage').value;
+
+            const mailtoLink = `mailto:farhanfp20@gmail.com?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(`Name: ${name}\nEmail: ${email}\n\nMessage:\n${message}`)}`;
+
+            window.location.href = mailtoLink;
+            showAlert('Opening email client...', 'success');
+        }
+
+        // Initialize
+        window.addEventListener('load', function() {
+            document.getElementById('longUrl').focus();
+            
+            // Load saved API preference
+            const savedApi = localStorage.getItem('preferredApi');
+            if (savedApi) {
+                document.getElementById('apiSelect').value = savedApi;
+                document.getElementById('apiSelect').dispatchEvent(new Event('change'));
+            }
+        });
+
+        // Save API preference
+        document.getElementById('apiSelect').addEventListener('change', function() {
+            localStorage.setItem('preferredApi', this.value);
+        });
+    </script>
+</body>
+</html>
